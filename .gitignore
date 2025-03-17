@@ -1,3 +1,4 @@
 *.xlsx
 !english_news_articles.xlsx
 !Categorized_Sentences.xlsx
+__pycache__/
