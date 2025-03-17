@@ -1,9 +1,12 @@
 from openpyxl import load_workbook, Workbook
+from string_normalizer import TextProcessor
 import os
 
+text_processor = TextProcessor()
+
 def normalize_text(text):
-    """Removes commas and hyphens from text."""
-    return text.replace(",", "").replace("-", " ")
+    """Normalize text using TextProcessor."""
+    return text_processor.process_text(text)
 
 # Load data from english_news_articles.xlsx
 input_file = "english_news_articles.xlsx"
