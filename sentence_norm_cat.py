@@ -1,59 +1,57 @@
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
+import os
 
-# File paths
-english_news_path = "english_news_articles.xlsx"
-categorized_sentences_path = "Categorized_Sentences.xlsx"
+def normalize_text(text):
+    """Removes commas and hyphens from text."""
+    return text.replace(",", "").replace("-", " ")
 
-# Load the English news articles workbook
-wb_articles = load_workbook(english_news_path)
-ws_articles = wb_articles[wb_articles.sheetnames[0]]  # First sheet
+# Load data from english_news_articles.xlsx
+input_file = "english_news_articles.xlsx"
+wb_input = load_workbook(input_file)
+sheet = wb_input.active  # Read the first sheet
 
-# Extract headers
-headers = [cell.value for cell in ws_articles[1]]
+# Extract headers and convert them to lowercase for safe indexing
+headers = [str(cell.value).strip().lower() for cell in sheet[1]]
 
-# Find column indices for 'text' and 'Domain'
-text_col_idx = headers.index("text") + 1  # Convert to 1-based index
-domain_col_idx = headers.index("Domain") + 1
+# Ensure the required columns exist
+if "domain" not in headers or "text" not in headers:
+    raise ValueError("Missing 'Domain' or 'text' columns in the Excel file.")
 
-# Dictionary to store categorized sentences
-categorized_sentences = {}
+category_idx = headers.index("domain")
+text_idx = headers.index("text")
 
-# Read data row by row (starting from the second row, skipping headers)
-for row in ws_articles.iter_rows(min_row=2, values_only=True):
-    text = row[text_col_idx - 1]  # Convert index back to 0-based
-    category = row[domain_col_idx - 1]
+# Read data
+data = {}
+for row in sheet.iter_rows(min_row=2, values_only=True):
+    if row[category_idx] is None or row[text_idx] is None:
+        continue  # Skip empty rows
 
-    # Normalize text (remove commas and hyphens)
-    if isinstance(text, str):
-        normalized_text = text.replace(",", "").replace("-", " ")
+    category = str(row[category_idx]).strip()
+    text = normalize_text(str(row[text_idx]).strip())
+
+    if category not in data:
+        data[category] = []
+    data[category].append(text)
+
+# Load or create output Excel file
+output_file = "Categorized_Sentences.xlsx"
+if os.path.exists(output_file):
+    wb_output = load_workbook(output_file)
+else:
+    wb_output = Workbook()
+    wb_output.remove(wb_output.active)  # Remove default sheet if new file
+
+# Categorize and write to appropriate sheets
+for category, texts in data.items():
+    if category not in wb_output.sheetnames:
+        ws = wb_output.create_sheet(title=category)
+        ws.append([""])  # Add header row
     else:
-        continue
+        ws = wb_output[category]
 
-    # Add to the appropriate category
-    if category not in categorized_sentences:
-        categorized_sentences[category] = []
-    categorized_sentences[category].append([normalized_text])  # Wrap in list for row format
+    for text in texts:
+        ws.append([text])
 
-# Load the Categorized Sentences workbook
-wb_categorized = load_workbook(categorized_sentences_path)
-
-# Ensure existing sheets are correctly populated
-for sheet_name in wb_categorized.sheetnames:
-    ws = wb_categorized[sheet_name]
-
-    # Check if sheet is empty (only header exists)
-    if ws.max_row == 1:
-        ws.append(["Sentence"])  # Ensure the header exists
-
-    # Clear existing data but keep the header intact
-    ws.delete_rows(2, ws.max_row)  
-
-    # Append normalized sentences if available for the category
-    if sheet_name in categorized_sentences:
-        for sentence in categorized_sentences[sheet_name]:
-            ws.append(sentence)
-
-# Save the workbook
-wb_categorized.save(categorized_sentences_path)
-
-print("Categorization and normalization completed successfully.")
+# Save changes
+wb_output.save(output_file)
+print("Sentences have been categorized and saved successfully.")
