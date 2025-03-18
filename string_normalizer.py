@@ -205,6 +205,7 @@ class TextProcessor:
             r"\bEst\.(?=\s|\b)": "Established",
             r"\bMfg\.(?=\s|\b)": "Manufacturing",
             r"\bRegd\.(?=\s|\b)": "Registered",
+            r"\bNo\.(?=\s|\b)": "Number",
             r"\bJan\.(?=\s|\b)": "January",
             r"\bFeb\.(?=\s|\b)": "February",
             r"\bMar\.(?=\s|\b)": "March",
